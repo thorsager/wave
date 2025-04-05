@@ -26,16 +26,16 @@ type waveform struct {
 	frequency float64
 	gain      float64
 }
-type waveformMap map[int][]waveform
+type waveformList [][]waveform
 
-func (m waveformMap) String() string {
+func (m waveformList) String() string {
 	sb := strings.Builder{}
 	for k, v := range m {
 		freqs := "*none*"
 		if v != nil {
 			var fs []string
 			for _, w := range v {
-				fs = append(fs, fmt.Sprintf("%f", w.frequency))
+				fs = append(fs, fmt.Sprintf("%f(%f)", w.frequency, w.gain))
 			}
 			freqs = strings.Join(fs, ",")
 		}
@@ -69,7 +69,7 @@ func main() {
 	wavOut := wave.NewEncoder(f, wave.PCMAudioFormat, uint16(len(wfm)), flagSampleRate, 16)
 	wavOut.AddInfo(wave.Info{
 		Marker: wave.MarkerICRD,
-		Value:  time.Now().String(),
+		Value:  time.Now().UTC().Format(time.RFC1123),
 	})
 	defer func() {
 		err = wavOut.Close()
@@ -94,7 +94,7 @@ func main() {
 			} else {
 				unmixed = make([]int16, len(wfl))
 				for j, wf := range wfl { // range on waves pr. channel
-					fv := math.Sin(float64(i) / float64(flagSampleRate) * wf.frequency * 2 * math.Pi)
+					fv := math.Sin(float64(i)/float64(flagSampleRate)*wf.frequency*2*math.Pi) * wf.gain
 					unmixed[j] = int16(fv * 32767)
 				}
 			}
@@ -107,9 +107,10 @@ func main() {
 	}
 }
 
-func parseWaveforms(wfs []string) (waveformMap, error) {
-	wfm := make(waveformMap)
+func parseWaveforms(wfs []string) (waveformList, error) {
+	wfm := make(map[int][]waveform)
 
+	mc := 0
 	for _, s := range wfs {
 		elms := strings.Split(s, ":")
 		if len(elms) > 3 || len(elms) < 2 {
@@ -146,22 +147,23 @@ func parseWaveforms(wfs []string) (waveformMap, error) {
 			frequency: freq,
 			gain:      gain,
 		})
+
+		if channel > mc {
+			mc = channel
+		}
 	}
 
 	// pad out channels with nil waveforms
-	mc := 0
-	for c, _ := range wfm {
-		if c >= mc {
-			mc = c
-		}
-	}
-	for i := range mc {
-		if _, ok := wfm[i]; !ok {
-			wfm[i] = nil
+	wfl := make([][]waveform, mc+1)
+	for i := 0; i <= mc; i++ {
+		if w, ok := wfm[i]; !ok {
+			wfl[i] = nil
+		} else {
+			wfl[i] = w
 		}
 	}
 
-	return wfm, nil
+	return wfl, nil
 }
 
 func mix(samples []int16) int16 {
