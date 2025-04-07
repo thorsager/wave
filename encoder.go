@@ -137,7 +137,7 @@ func (e *Encoder) writeHeader(metaSize uint32) error {
 
 		// seek endOfFile
 		_, err = e.writeSeeker.Seek(0, io.SeekEnd)
-		return nil
+		return err
 	}
 
 	buffer := make([]byte, 44)

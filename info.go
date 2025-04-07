@@ -16,7 +16,7 @@ func (m Marker) Uint32() uint32 {
 	return binary.BigEndian.Uint32(m[:])
 }
 func (m Marker) String() string {
-	return fmt.Sprintf("%s", m[:])
+	return string(m[:])
 }
 
 func asMarker(i uint32) Marker {

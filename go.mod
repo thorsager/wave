@@ -1,4 +1,4 @@
-module github.com/thorsager/swave
+module github.com/thorsager/wave
 
 go 1.23.3
 

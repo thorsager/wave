@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
-	wave "github.com/thorsager/swave"
+	wave "github.com/thorsager/wave"
 )
 
 var (
